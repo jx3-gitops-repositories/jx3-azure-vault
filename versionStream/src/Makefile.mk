@@ -7,6 +7,9 @@ VAULT_ADDR ?= https://vault.secret-infra:8200
 # You can disable force mode on kubectl apply by modifying this line:
 KUBECTL_APPLY_FLAGS ?= --force
 
+SOURCE_DIR ?= /workspace/source
+
+
 # NOTE to enable debug logging of 'helmfile template' to diagnose any issues with values.yaml templating
 # you can run:
 #
@@ -52,8 +55,12 @@ fetch: init
 	helm repo add jx http://chartmuseum.jenkins-x.io
 
 	# generate the yaml from the charts in helmfile.yaml and moves them to the right directory tree (cluster or namespaces/foo)
-	jx gitops helmfile template $(HELMFILE_TEMPLATE_FLAGS) --args="--values=jx-values.yaml --values=versionStream/src/fake-secrets.yaml.gotmpl --values=imagePullSecrets.yaml" --output-dir $(OUTPUT_DIR)
+	helmfile --file helmfile.yaml template --include-crds --output-dir-template /tmp/generate/{{.Release.Namespace}}
 	
+	jx gitops split --dir /tmp/generate
+	jx gitops rename --dir /tmp/generate
+	jx gitops helmfile move --output-dir config-root --dir /tmp/generate
+
 	# convert k8s Secrets => ExternalSecret resources using secret mapping + schemas
 	# see: https://github.com/jenkins-x/jx-secret#mappings
 	jx secret convert --source-dir $(OUTPUT_DIR)
@@ -63,9 +70,6 @@ fetch: init
 
 	# lets make sure all the namespaces exist for environments of the replicated secrets
 	jx gitops namespace --dir-mode --dir $(OUTPUT_DIR)/namespaces
-
-	# lets publish the requirements metadata into the dev Environment.Spec.TeamSettings.BootRequirements so its easy to access them via CRDs
-	jx gitops requirements publish
 
 .PHONY: build
 # uncomment this line to enable kustomize
@@ -118,11 +122,11 @@ lint:
 
 .PHONY: dev-ns verify-ingress
 verify-ingress:
-	jx verify ingress
+	jx verify ingress --ingress-service ingress-nginx-controller
 
 .PHONY: dev-ns verify-ingress-ignore
 verify-ingress-ignore:
-	-jx verify ingress
+	-jx verify ingress --ingress-service ingress-nginx-controller
 
 .PHONY: dev-ns verify-install
 verify-install:
