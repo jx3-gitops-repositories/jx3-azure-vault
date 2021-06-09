@@ -4,7 +4,9 @@ spec:
   cluster:
     provider: aks
   environments:
-    - key: dev
+  - key: dev
+  - key: staging
+  - key: production
   ingress:
     tls: {}
   secretStorage: vault
