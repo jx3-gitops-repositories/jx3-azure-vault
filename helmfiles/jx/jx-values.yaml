@@ -26,6 +26,8 @@ jxRequirements:
     provider: aks
   environments:
   - key: dev
+  - key: staging
+  - key: production
   ingress:
     domain: change.me
     externalDNS: false
