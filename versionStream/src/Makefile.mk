@@ -42,7 +42,7 @@ EXTERNAL_VAULT ?= false
 GIT_SHA ?= $(shell git rev-parse HEAD)
 
 # You can disable force mode on kubectl apply by modifying this line:
-KUBECTL_APPLY_FLAGS ?= --force
+KUBECTL_APPLY_FLAGS ?= --server-side --force-conflicts
 
 SOURCE_DIR ?= /workspace/source
 
